@@ -254,3 +254,6 @@ Code is available in the Backend folder with the name `test_backend.py`.
 
 These were some of the main issues I encountered. I utilized resources such as Stack Overflow, YouTube, and Google to resolve these errors and misconfigurations. Apart from that,
 This project provided a comprehensive understanding of DevOps practices, microservices, Docker, and Jenkins. I learned to automate the build, test, and deployment processes effectively, preparing me for real-world software development and DevOps roles.
+
+
+CI/CD test commit - Phase 1
