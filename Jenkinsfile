@@ -1,33 +1,38 @@
 pipeline {
-    agent any
+    agent {
+        label 'docker-linux'
+    }
 
     stages {
+
         stage('Checkout') {
             steps {
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[url: 'https://github.com/DaudCloud-sudo/Microservice-CI-CD-Pipeline.git']]
-                ])
+                checkout scm
             }
         }
 
-        stage('Build Frontend Docker Image') {
+        stage('Load Secrets') {
             steps {
-                dir('frontend') {
-                    script {
-                        bat 'docker build -t frontend:latest .'
-                    }
+                withCredentials([string(credentialsId: 'APP_SECRET', variable: 'APP_SECRET')]) {
+                    sh '''
+                    echo "Secret loaded securely"
+                    '''
                 }
             }
         }
 
-        stage('Build Backend Docker Image') {
+        stage('Build Frontend Image') {
+            steps {
+                dir('frontend') {
+                    sh 'docker build -t my-frontend-image:latest .'
+                }
+            }
+        }
+
+        stage('Build Backend Image') {
             steps {
                 dir('backend') {
-                    script {
-                        bat 'docker build -t backend:latest .'
-                    }
+                    sh 'docker build -t my-backend-image:latest .'
                 }
             }
         }
@@ -35,21 +40,34 @@ pipeline {
         stage('Test Backend') {
             steps {
                 dir('backend') {
-                    script {
-                        echo 'Running backend tests - Python-unittest for backend functionality'
-                        echo 'Test run sucessfully' 
-                    }
+                    sh 'pytest tests/ --junitxml=report.xml'
+                }
+            }
+            post {
+                always {
+                    junit 'report.xml'
+                }
+                failure {
+                    echo '❌ Backend tests failed. Fix tests before deploy.'
                 }
             }
         }
 
-        stage('Deploy Microservices') {
+        stage('Run Containers') {
             steps {
-                script {
-                    echo 'Deploying frontend and backend services'
-                    bat 'docker run -d -p 80:80 frontend:latest'
-                    bat 'docker run -d -p 3000:3000 backend:latest'
-                }
+                sh '''
+                docker rm -f my-backend my-frontend || true
+                docker network create my-network || true
+
+                docker run -d --name my-backend \
+                  --network my-network \
+                  my-backend-image:latest
+
+                docker run -d --name my-frontend \
+                  -p 8080:80 \
+                  --network my-network \
+                  my-frontend-image:latest
+                '''
             }
         }
     }
