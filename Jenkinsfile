@@ -57,20 +57,20 @@ pipeline {
         }
 
         stage('Test Backend') {
-    steps {
-        dir('backend') {
-            sh '''
-                echo "Running Jest tests inside container..."
-                docker run --rm my-backend-image:latest npm test || true
-            '''
+            steps {
+                dir('backend') {
+                    sh '''
+                        echo "Running Jest tests inside container..."
+                        docker run --rm my-backend-image:latest npm test || true
+                    '''
+                }
+            }
+            post {
+                always {
+                    junit 'backend/report.xml'
+                }
+            }
         }
-    }
-    post {
-        always {
-            junit 'backend/report.xml'
-        }
-    }
-}
 
 
 
