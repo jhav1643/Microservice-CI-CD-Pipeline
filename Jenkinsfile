@@ -1,6 +1,6 @@
 pipeline {
 
-    agent { label 'docker-linux' }
+    agent any
 
     stages {
 
@@ -34,7 +34,7 @@ pipeline {
             }
         }
 
-        stage('Login + Tag + Push DockerHub') {
+        stage('Login + Tag + Push to DockerHub') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -58,12 +58,11 @@ pipeline {
 
         stage('Test Backend') {
             steps {
-                sh """
-                    docker run --rm \
-                        -v $WORKSPACE/backend:/app \
-                        my-backend-image:latest \
-                        pytest tests/ --junitxml=/app/report.xml || true
-                """
+                dir('backend') {
+                    sh '''
+                        docker run --rm -v $(pwd):/app my-backend-image:latest npm test || true
+                    '''
+                }
             }
             post {
                 always {
@@ -77,10 +76,14 @@ pipeline {
             steps {
                 sh """
                     docker rm -f my-backend my-frontend || true
-                    docker network create my-network || true
+                    docker network rm my-network || true
+
+                    docker network create my-network
 
                     docker run -d --name my-backend --network my-network my-backend-image:latest
-                    docker run -d --name my-frontend -p 8080:80 --network my-network my-frontend-image:latest
+
+                    docker run -d --name my-frontend -p 8081:80 --network my-network my-frontend-image:latest
+
                 """
             }
         }
