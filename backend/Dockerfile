@@ -4,8 +4,6 @@ WORKDIR /app
 
 COPY package*.json ./
 
-# Install ALL dependencies including devDependencies
-ENV NODE_ENV=development
 RUN npm install
 
 COPY . .
