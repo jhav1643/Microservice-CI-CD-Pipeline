@@ -1,18 +1,15 @@
-# Use the official Node.js image
 FROM node:16-alpine
 
-# Set the working directory inside the container
 WORKDIR /app
 
-# Copy package.json and install dependencies
-COPY package.json .
+COPY package*.json ./
+
+# Install ALL dependencies including devDependencies
+ENV NODE_ENV=development
 RUN npm install
 
-# Copy the rest of the backend code
 COPY . .
 
-# Expose port 3000 for the Node.js application
 EXPOSE 3000
 
-# Command to run the application
 CMD ["npm", "start"]
