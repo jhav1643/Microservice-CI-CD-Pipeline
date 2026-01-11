@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'docker-linux'
-    }
+    agent any
 
     stages {
 
@@ -13,7 +11,7 @@ pipeline {
 
         stage('Load Secrets') {
             steps {
-                withCredentials([string(credentialsId: 'app-secret', variable: 'app-secret')]) {
+                withCredentials([string(credentialsId: 'app-secret', variable: 'APP_SECRET')]) {
                     sh 'echo Secret loaded securely'
                 }
             }
@@ -45,7 +43,7 @@ pipeline {
                     )
                 ]) {
                     sh """
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     """
                 }
             }
@@ -54,8 +52,8 @@ pipeline {
         stage('Tag Images') {
             steps {
                 sh """
-                docker tag my-frontend-image:latest $USER/my-frontend:${BUILD_NUMBER}
-                docker tag my-backend-image:latest $USER/my-backend:${BUILD_NUMBER}
+                docker tag my-frontend-image:latest $DOCKER_USER/my-frontend:${BUILD_NUMBER}
+                docker tag my-backend-image:latest $DOCKER_USER/my-backend:${BUILD_NUMBER}
                 """
             }
         }
@@ -63,8 +61,8 @@ pipeline {
         stage('Push Images') {
             steps {
                 sh """
-                docker push $USER/my-frontend:${BUILD_NUMBER}
-                docker push $USER/my-backend:${BUILD_NUMBER}
+                docker push $DOCKER_USER/my-frontend:${BUILD_NUMBER}
+                docker push $DOCKER_USER/my-backend:${BUILD_NUMBER}
                 """
             }
         }
