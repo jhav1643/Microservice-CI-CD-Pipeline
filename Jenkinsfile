@@ -58,9 +58,12 @@ pipeline {
 
         stage('Test Backend') {
             steps {
-                dir('backend') {
-                    sh 'pytest tests/ --junitxml=report.xml || true'
-                }
+                sh """
+                    docker run --rm \
+                        -v $WORKSPACE/backend:/app \
+                        my-backend-image:latest \
+                        pytest tests/ --junitxml=/app/report.xml || true
+                """
             }
             post {
                 always {
@@ -68,6 +71,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Run Containers') {
             steps {
