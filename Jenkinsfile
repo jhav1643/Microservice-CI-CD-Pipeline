@@ -13,7 +13,7 @@ pipeline {
 
         stage('Load Secrets') {
             steps {
-                withCredentials([string(credentialsId: 'APP_SECRET', variable: 'APP_SECRET')]) {
+                withCredentials([string(credentialsId: 'app-secret', variable: 'app-secret')]) {
                     sh 'echo Secret loaded securely'
                 }
             }
