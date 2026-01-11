@@ -1,16 +1,29 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
+  "description": "Backend service for CI-CD pipeline",
+  "main": "server.js",
+  "author": "Vaibhav Jha",
   "license": "ISC",
-  "description": "",
+
+  "scripts": {
+    "start": "node server.js",
+    "test": "jest --ci --reporters=default --reporters=jest-junit"
+  },
+
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2"
+  },
+
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "jest-junit": "^16.0.0"
+  },
+
+  "jest-junit": {
+    "outputDirectory": "./",
+    "outputName": "report.xml"
   }
 }
+
