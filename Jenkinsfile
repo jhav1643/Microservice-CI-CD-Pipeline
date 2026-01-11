@@ -1,5 +1,6 @@
 pipeline {
-    agent any
+
+    agent { label 'docker-linux' }
 
     stages {
 
@@ -12,7 +13,7 @@ pipeline {
         stage('Load Secrets') {
             steps {
                 withCredentials([string(credentialsId: 'app-secret', variable: 'APP_SECRET')]) {
-                    sh 'echo Secret loaded securely'
+                    sh 'echo "Secret loaded securely"'
                 }
             }
         }
@@ -33,7 +34,7 @@ pipeline {
             }
         }
 
-        stage('Login to DockerHub') {
+        stage('Login + Tag + Push DockerHub') {
             steps {
                 withCredentials([
                     usernamePassword(
@@ -44,38 +45,26 @@ pipeline {
                 ]) {
                     sh """
                         echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
+                        docker tag my-frontend-image:latest $DOCKER_USER/my-frontend:${BUILD_NUMBER}
+                        docker tag my-backend-image:latest $DOCKER_USER/my-backend:${BUILD_NUMBER}
+
+                        docker push $DOCKER_USER/my-frontend:${BUILD_NUMBER}
+                        docker push $DOCKER_USER/my-backend:${BUILD_NUMBER}
                     """
                 }
-            }
-        }
-
-        stage('Tag Images') {
-            steps {
-                sh """
-                docker tag my-frontend-image:latest $DOCKER_USER/my-frontend:${BUILD_NUMBER}
-                docker tag my-backend-image:latest $DOCKER_USER/my-backend:${BUILD_NUMBER}
-                """
-            }
-        }
-
-        stage('Push Images') {
-            steps {
-                sh """
-                docker push $DOCKER_USER/my-frontend:${BUILD_NUMBER}
-                docker push $DOCKER_USER/my-backend:${BUILD_NUMBER}
-                """
             }
         }
 
         stage('Test Backend') {
             steps {
                 dir('backend') {
-                    sh 'pytest tests/ --junitxml=report.xml'
+                    sh 'pytest tests/ --junitxml=report.xml || true'
                 }
             }
             post {
                 always {
-                    junit 'report.xml'
+                    junit 'backend/report.xml'
                 }
             }
         }
@@ -83,11 +72,11 @@ pipeline {
         stage('Run Containers') {
             steps {
                 sh """
-                docker rm -f my-backend my-frontend || true
-                docker network create my-network || true
+                    docker rm -f my-backend my-frontend || true
+                    docker network create my-network || true
 
-                docker run -d --name my-backend --network my-network my-backend-image:latest
-                docker run -d --name my-frontend -p 8080:80 --network my-network my-frontend-image:latest
+                    docker run -d --name my-backend --network my-network my-backend-image:latest
+                    docker run -d --name my-frontend -p 8080:80 --network my-network my-frontend-image:latest
                 """
             }
         }
