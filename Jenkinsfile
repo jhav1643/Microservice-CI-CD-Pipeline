@@ -14,9 +14,7 @@ pipeline {
         stage('Load Secrets') {
             steps {
                 withCredentials([string(credentialsId: 'APP_SECRET', variable: 'APP_SECRET')]) {
-                    sh '''
-                    echo "Secret loaded securely"
-                    '''
+                    sh 'echo Secret loaded securely'
                 }
             }
         }
@@ -37,6 +35,32 @@ pipeline {
             }
         }
 
+        stage('Login to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+                    sh "echo $PASS | docker login -u $USER --password-stdin"
+                }
+            }
+        }
+
+        stage('Tag Images') {
+            steps {
+                sh """
+                docker tag my-frontend-image:latest $USER/my-frontend:${BUILD_NUMBER}
+                docker tag my-backend-image:latest $USER/my-backend:${BUILD_NUMBER}
+                """
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                sh """
+                docker push $USER/my-frontend:${BUILD_NUMBER}
+                docker push $USER/my-backend:${BUILD_NUMBER}
+                """
+            }
+        }
+
         stage('Test Backend') {
             steps {
                 dir('backend') {
@@ -47,27 +71,18 @@ pipeline {
                 always {
                     junit 'report.xml'
                 }
-                failure {
-                    echo '❌ Backend tests failed. Fix tests before deploy.'
-                }
             }
         }
 
         stage('Run Containers') {
             steps {
-                sh '''
+                sh """
                 docker rm -f my-backend my-frontend || true
                 docker network create my-network || true
 
-                docker run -d --name my-backend \
-                  --network my-network \
-                  my-backend-image:latest
-
-                docker run -d --name my-frontend \
-                  -p 8080:80 \
-                  --network my-network \
-                  my-frontend-image:latest
-                '''
+                docker run -d --name my-backend --network my-network my-backend-image:latest
+                docker run -d --name my-frontend -p 8080:80 --network my-network my-frontend-image:latest
+                """
             }
         }
     }
